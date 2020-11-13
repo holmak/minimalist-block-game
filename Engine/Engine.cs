@@ -130,4 +130,9 @@ static partial class Engine
             FreeUnusedTextCacheEntries();
         }
     }
+
+    public static void SetWindowDisplay(int display)
+    {
+        SDL.SDL_SetWindowPosition(Window, SDL.SDL_WINDOWPOS_CENTERED_DISPLAY(display), SDL.SDL_WINDOWPOS_CENTERED_DISPLAY(display));
+    }
 }
