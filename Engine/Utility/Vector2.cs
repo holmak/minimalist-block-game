@@ -116,6 +116,11 @@ struct Vector2
         return new Vector2(s * v.X, s * v.Y);
     }
 
+    public static Vector2 operator *(Vector2 v, Vector2 w)
+    {
+        return new Vector2(v.X * w.X, v.Y * w.Y);
+    }
+
     public static Vector2 operator /(Vector2 v, float s)
     {
         return new Vector2(v.X / s, v.Y / s);
