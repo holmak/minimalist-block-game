@@ -36,10 +36,6 @@ class Game
     {
         Random random = new Random(100);
 
-        TileIndex[] floorTiles = Enumerable.Range(4, 12).Select(i => new TileIndex(i, 0)).ToArray();
-        TileIndex[] topWallTiles = Enumerable.Range(1, 3).Select(i => new TileIndex(i, 1)).ToArray();
-        TileIndex[] sideWallTiles = Enumerable.Range(2, 3).Select(i => new TileIndex(0, i)).ToArray();
-
         // Create the player:
         Creatures.Add(new Creature
         {
@@ -61,24 +57,34 @@ class Game
                 char above = (row > 0) ? raw[row - 1][column] : '.';
                 char below = (row < MapHeight - 1) ? raw[row + 1][column] : '.';
 
-                TileIndex tile;
-                if (c == '.') tile = new TileIndex(0, 0);
+                TileIndex[] tiles;
+                if (c == '.')
+                {
+                    tiles = MakeTileSpan(new TileIndex(0, 0));
+                }
                 else if (c == 'W')
                 {
-                    if (above == 'W')
-                    {
-                        tile = Choose(random, sideWallTiles);
-                    }
-                    else
-                    {
-                        tile = Choose(random, topWallTiles);
-                    }
+                    // Outer corners:
+                    if (below == 'W' && right == 'W' && above == '.') tiles = MakeTileSpan(new TileIndex(0, 1));
+                    else if (below == 'W' && left == 'W' && above == '.') tiles = MakeTileSpan(new TileIndex(5, 1));
+                    else if (above == 'W' && right == 'W' && below == '.') tiles = MakeTileSpan(new TileIndex(0, 5));
+                    else if (above == 'W' && left == 'W' && below == '.') tiles = MakeTileSpan(new TileIndex(5, 5));
+                    // Inside corners:
+                    else if (below == 'W' && right == 'W' && above != '.') tiles = MakeTileSpan(new TileIndex(8, 1));
+                    else if (below == 'W' && left == 'W' && above != '.') tiles = MakeTileSpan(new TileIndex(11, 1));
+                    // Horizontal walls:
+                    else if (above == '.' || (above == 'W' && (left == 'W' || right == 'W'))) tiles = MakeTileSpan(new TileIndex(1, 1), new TileIndex(1, 0), 4);
+                    else if (below == '.') tiles = MakeTileSpan(new TileIndex(1, 5), new TileIndex(1, 0), 4);
+                    // Vertical walls:
+                    else if (left == '.') tiles = MakeTileSpan(new TileIndex(0, 2), new TileIndex(0, 1), 3);
+                    else if (right == '.') tiles = MakeTileSpan(new TileIndex(5, 2), new TileIndex(0, 1), 3);
+                    else tiles = MakeTileSpan(new TileIndex(2, 0));
                 }
                 else
                 {
-                    tile = Choose(random, floorTiles);
+                    tiles = MakeTileSpan(new TileIndex(4, 0), new TileIndex(1, 0), 12);
                 }
-                Walls[column, row] = tile;
+                Walls[column, row] = Choose(random, tiles);
 
                 Vector2 here = new Vector2(column, row) * WallTiles.TileSize;
 
