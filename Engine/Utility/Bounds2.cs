@@ -6,8 +6,8 @@ struct Bounds2
     public Vector2 Position;
     public Vector2 Size;
 
-    private Vector2 Min => Position;
-    private Vector2 Max => Position + Size;
+    public Vector2 Min => Position;
+    public Vector2 Max => Position + Size;
 
     /// <summary>
     /// Creates a new 2D bounds rectangle.
@@ -54,5 +54,10 @@ struct Bounds2
     public bool Overlaps(Bounds2 bounds)
     {
         return !(bounds.Max.X < Min.X || bounds.Min.X > Max.X || bounds.Max.Y < Min.Y || bounds.Min.Y > Max.Y);
+    }
+
+    public Bounds2 Translated(Vector2 offset)
+    {
+        return new Bounds2(Position + offset, Size);
     }
 }

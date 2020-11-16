@@ -64,6 +64,15 @@ static partial class Engine
         SDL.SDL_RenderFillRect(Renderer, ref rect);
     }
 
+    /// <summary>
+    /// Draws a point.
+    /// </summary>
+    public static void DrawPoint(Vector2 point, float diameter, Color color)
+    {
+        Vector2 size = new Vector2(diameter, diameter);
+        DrawRectSolid(new Bounds2(point - 0.5f * size, size), color);
+    }
+
     // ======================================================================================
     // Texture drawing
     // ======================================================================================

@@ -7,7 +7,9 @@ class Game
     public static readonly string Title = "Minimalist RPG Demo";
     public static readonly Vector2 Resolution = new Vector2(1280, 768);
     public static readonly int AssetScale = 4;
+
     public static readonly bool Debug = true;
+    public static readonly bool DebugCollision = false;
 
     static readonly int AnimationPeriod = 15;
 
@@ -148,6 +150,8 @@ class Game
 
     public void Update()
     {
+        List<Action> diagnostics = new List<Action>();
+
         AnimationTimer += 1;
         bool advanceFrame = false;
         if (AnimationTimer >= AnimationPeriod)
@@ -169,7 +173,105 @@ class Game
             creature.Velocity += creature.Movement * Creature.MaxAcceleration * Engine.TimeDelta;
             creature.Velocity.X = Clamp(creature.Velocity.X, -Creature.MaxVelocity, Creature.MaxVelocity);
             creature.Velocity.Y = Clamp(creature.Velocity.Y, -Creature.MaxVelocity, Creature.MaxVelocity);
-            creature.Position += creature.Velocity * Engine.TimeDelta;
+
+            // Update position and collide:
+            {
+                // These bounds describe the "solid" part of the entity; it is independent of position.
+                Bounds2 creatureShape = new Bounds2(
+                    new Vector2(1 / 8f, 6 / 8f) * WallTiles.DestinationSize,
+                    new Vector2(6 / 8f, 2 / 8f) * WallTiles.DestinationSize);
+
+                Vector2 motion = creature.Velocity * Engine.TimeDelta;
+                TileIndex nearest = GetCellAt(creature.Position, WallTiles);
+
+                // Find everything that could be collided with:
+                List<Bounds2> obstacles = new List<Bounds2>();
+                for (int row = nearest.Row - 2; row <= nearest.Row + 2; row++)
+                {
+                    for (int column = nearest.Column - 2; column <= nearest.Column + 2; column++)
+                    {
+                        if (Obstacles[column, row])
+                        {
+                            Bounds2 obstacleBounds = new Bounds2(
+                                new Vector2(column, row) * WallTiles.DestinationSize,
+                                WallTiles.DestinationSize);
+
+                            // The effective bounds are the sum of the obstacle's and the mover's bounds:
+                            Vector2 min = obstacleBounds.Min - creatureShape.Max;
+                            Vector2 max = obstacleBounds.Max - creatureShape.Min;
+                            Bounds2 totalBounds = new Bounds2(min, max - min);
+                            obstacles.Add(totalBounds);
+
+                            if (DebugCollision && creature == Player)
+                            {
+                                diagnostics.Add(() => Engine.DrawRectEmpty(obstacleBounds.Translated(Origin), Color.Green));
+                            }
+                        }
+                    }
+                }
+
+                // Calculate collision along the X and Y axes independently.
+                // Each calculation considers only motion along that axis.
+                // Performing these steps sequentially ensures that objects can't move diagonally through other objects.
+
+                // X step:
+                Vector2 position = creature.Position;
+                Vector2 newPosition = position + new Vector2(motion.X, 0);
+                foreach (Bounds2 bounds in obstacles)
+                {
+                    // Leftward:
+                    if (motion.X < 0 &&
+                        position.Y > bounds.Position.Y &&
+                        position.Y < bounds.Position.Y + bounds.Size.Y)
+                    {
+                        float limit = bounds.Position.X + bounds.Size.X;
+                        if (position.X >= limit && newPosition.X < limit) newPosition.X = limit;
+                    }
+
+                    // Rightward:
+                    if (motion.X > 0 &&
+                        position.Y > bounds.Position.Y &&
+                        position.Y < bounds.Position.Y + bounds.Size.Y)
+                    {
+                        float limit = bounds.Position.X;
+                        if (position.X <= limit && newPosition.X > limit) newPosition.X = limit;
+                    }
+                }
+                creature.Position.X = newPosition.X;
+
+                // Y step:
+                position = creature.Position;
+                newPosition = position + new Vector2(0, motion.Y);
+                foreach (Bounds2 bounds in obstacles)
+                {
+                    // Upward:
+                    if (motion.Y < 0 &&
+                        position.X > bounds.Position.X &&
+                        position.X < bounds.Position.X + bounds.Size.X)
+                    {
+                        float limit = bounds.Position.Y + bounds.Size.Y;
+                        if (position.Y >= limit && newPosition.Y < limit) newPosition.Y = limit;
+                    }
+
+                    // Downward:
+                    if (motion.Y > 0 &&
+                        position.X > bounds.Position.X &&
+                        position.X < bounds.Position.X + bounds.Size.X)
+                    {
+                        float limit = bounds.Position.Y;
+                        if (position.Y <= limit && newPosition.Y > limit) newPosition.Y = limit;
+                    }
+                }
+                creature.Position.Y = newPosition.Y;
+
+                if (DebugCollision && creature == Player)
+                {
+                    diagnostics.Add(() =>
+                    {
+                        Engine.DrawRectEmpty(creatureShape.Translated(Origin + creature.Position), Color.Green);
+                    });
+                }
+            }
 
             // Slow to a stop when there is no input -- separately on each axis:
             if (creature.Movement.X == 0)
@@ -217,9 +319,18 @@ class Game
                 creature.Frame = (creature.Frame + 1) % creature.Appearance.Length;
             }
         }
+
+        // Draw debug information:
+        if (Debug)
+        {
+            foreach (Action action in diagnostics)
+            {
+                action();
+            }
+        }
     }
 
-    static TileIndex GetHoveredCell(Vector2 point, TileTexture tiles)
+    static TileIndex GetCellAt(Vector2 point, TileTexture tiles)
     {
         return new TileIndex(
             (int)Math.Floor(point.X / tiles.DestinationSize.X),
