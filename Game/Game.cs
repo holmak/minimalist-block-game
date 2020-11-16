@@ -118,6 +118,7 @@ class Game
                     {
                         Position = here,
                         Appearance = MakeTileSpan(new TileIndex(3, 0)),
+                        IsFlat = true,
                     });
                 }
                 else if (c == 'T')
@@ -188,7 +189,7 @@ class Game
         }
 
         // Draw back-to-front:
-        foreach (Creature creature in Creatures.OrderBy(x => x.Position.Y))
+        foreach (Creature creature in Creatures.OrderBy(x => x.IsFlat ? 0 : 1).ThenBy(x => x.Position.Y))
         {
             TileEngine.DrawTile(PropTiles, creature.Appearance[creature.Frame], creature.Position);
 
@@ -256,7 +257,7 @@ class Game
 
 class Creature
 {
-    public static readonly float MaxVelocity = 150;
+    public static readonly float MaxVelocity = 50;
     public static readonly float MaxAcceleration = MaxVelocity * 10;
     public static readonly float Deceleration = MaxVelocity * 15;
 
@@ -264,5 +265,6 @@ class Creature
     public Vector2 Velocity;
     public Vector2 Movement;
     public TileIndex[] Appearance;
+    public bool IsFlat = false;
     public int Frame = 0;
 }
