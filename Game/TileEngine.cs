@@ -8,10 +8,10 @@ static class TileEngine
     {
         Engine.DrawTexture(
             tiles.Texture,
-            position: Game.WindowScale * position,
+            position: position,
             scaleMode: TextureScaleMode.Nearest,
-            source: new Bounds2(index * tiles.TileSize, tiles.TileSize),
-            size: Game.WindowScale * tiles.TileSize);
+            source: new Bounds2(index * tiles.SourceSize, tiles.SourceSize),
+            size: tiles.DestinationSize);
     }
 
     public static void DrawTileString(TileTexture tileFont, string text, Vector2 position)
@@ -22,7 +22,7 @@ static class TileEngine
             {
                 DrawTile(tileFont, new TileIndex(c % 16, c / 16), position);
             }
-            position.X += tileFont.TileSize.X;
+            position.X += tileFont.DestinationSize.X;
         }
     }
 }
@@ -30,12 +30,14 @@ static class TileEngine
 class TileTexture
 {
     public readonly Texture Texture;
-    public readonly Vector2 TileSize;
+    public readonly Vector2 SourceSize;
+    public readonly Vector2 DestinationSize;
 
-    public TileTexture(string filename, int tileWidth)
+    public TileTexture(string filename, int sourceWidth, int scale)
     {
         Texture = Engine.LoadTexture(filename);
-        TileSize = new Vector2(tileWidth, tileWidth);
+        SourceSize = new Vector2(sourceWidth, sourceWidth);
+        DestinationSize = SourceSize * scale;
     }
 }
 

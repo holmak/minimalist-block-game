@@ -5,20 +5,21 @@ using System.Collections.Generic;
 class Game
 {
     public static readonly string Title = "Minimalist RPG Demo";
-    public static readonly int WindowScale = 4;
-    public static readonly Vector2 Resolution = WindowScale * new Vector2(320, 240);
+    public static readonly Vector2 Resolution = new Vector2(1280, 768);
+    public static readonly int AssetScale = 4;
     public static readonly bool Debug = true;
 
     static readonly int AnimationPeriod = 15;
 
-    TileTexture WallTiles = new TileTexture("wall_tiles.png", 16);
-    TileTexture PropTiles = new TileTexture("prop_tiles.png", 16);
-    TileTexture UITiles = new TileTexture("ui_tiles.png", 16);
-    TileTexture FontTiles = new TileTexture("font_tiles.png", 8);
+    TileTexture WallTiles = new TileTexture("wall_tiles.png", 16, AssetScale);
+    TileTexture PropTiles = new TileTexture("prop_tiles.png", 16, AssetScale);
+    TileTexture UITiles = new TileTexture("ui_tiles.png", 16, AssetScale);
+    TileTexture FontTiles = new TileTexture("font_tiles.png", 8, AssetScale);
 
     int AnimationTimer = 0;
     int MapWidth, MapHeight;
     TileIndex[,] Walls;
+    Vector2 Origin = Vector2.Zero;
     List<Creature> Creatures = new List<Creature>();
     Creature Player => Creatures[0];
 
@@ -86,7 +87,7 @@ class Game
                 }
                 Walls[column, row] = Choose(random, tiles);
 
-                Vector2 here = new Vector2(column, row) * WallTiles.TileSize;
+                Vector2 here = new Vector2(column, row) * WallTiles.DestinationSize;
 
                 // Creatures always stand on floor tiles.
                 if (c == '@')
@@ -156,14 +157,6 @@ class Game
         if (Engine.GetKeyHeld(Key.S)) input.Y += 1;
         Player.Movement = input;
 
-        for (int row = 0; row < MapHeight; row++)
-        {
-            for (int column = 0; column < MapWidth; column++)
-            {
-                TileEngine.DrawTile(WallTiles, Walls[column, row], new Vector2(column, row) * WallTiles.TileSize);
-            }
-        }
-
         // Apply input and physics:
         foreach (Creature creature in Creatures)
         {
@@ -188,10 +181,30 @@ class Game
             }
         }
 
+        // Scroll to keep the player onscreen:
+        {
+            Vector2 margin = new Vector2(300, 250);
+            Origin.X = Clamp(Origin.X,
+                -Player.Position.X + margin.X,
+                -(Player.Position.X + PropTiles.DestinationSize.X) + Resolution.X - margin.X);
+            Origin.Y = Clamp(Origin.Y,
+                -Player.Position.Y + margin.Y,
+                -(Player.Position.Y + PropTiles.DestinationSize.Y) + Resolution.Y - margin.Y);
+        }
+
+        // Draw the static part of the map:
+        for (int row = 0; row < MapHeight; row++)
+        {
+            for (int column = 0; column < MapWidth; column++)
+            {
+                TileEngine.DrawTile(WallTiles, Walls[column, row], Origin + new Vector2(column, row) * WallTiles.DestinationSize);
+            }
+        }
+
         // Draw back-to-front:
         foreach (Creature creature in Creatures.OrderBy(x => x.IsFlat ? 0 : 1).ThenBy(x => x.Position.Y))
         {
-            TileEngine.DrawTile(PropTiles, creature.Appearance[creature.Frame], creature.Position);
+            TileEngine.DrawTile(PropTiles, creature.Appearance[creature.Frame], Origin + creature.Position);
 
             if (advanceFrame)
             {
@@ -199,14 +212,14 @@ class Game
             }
         }
 
-        TileEngine.DrawTileString(FontTiles, "This is text.", new Vector2(0, 0));
+        //TileEngine.DrawTileString(FontTiles, "This is text.", new Vector2(0, 0));
     }
 
     static TileIndex GetHoveredCell(Vector2 point, TileTexture tiles)
     {
         return new TileIndex(
-            (int)Math.Floor(point.X / tiles.TileSize.X / WindowScale),
-            (int)Math.Floor(point.Y / tiles.TileSize.Y / WindowScale));
+            (int)Math.Floor(point.X / tiles.DestinationSize.X),
+            (int)Math.Floor(point.Y / tiles.DestinationSize.Y));
     }
 
     static TileIndex[] MakeTileSpan(TileIndex first, TileIndex step, int count)
@@ -257,7 +270,7 @@ class Game
 
 class Creature
 {
-    public static readonly float MaxVelocity = 50;
+    public static readonly float MaxVelocity = 280;
     public static readonly float MaxAcceleration = MaxVelocity * 10;
     public static readonly float Deceleration = MaxVelocity * 15;
 
