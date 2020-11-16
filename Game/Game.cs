@@ -19,6 +19,7 @@ class Game
     int AnimationTimer = 0;
     int MapWidth, MapHeight;
     TileIndex[,] Walls;
+    bool[,] Obstacles;
     Vector2 Origin = Vector2.Zero;
     List<Creature> Creatures = new List<Creature>();
     Creature Player => Creatures[0];
@@ -48,6 +49,7 @@ class Game
         MapWidth = raw[0].Length;
         MapHeight = raw.Length;
         Walls = new TileIndex[MapWidth, MapHeight];
+        Obstacles = new bool[MapWidth, MapHeight];
         for (int row = 0; row < MapHeight; row++)
         {
             for (int column = 0; column < MapWidth; column++)
@@ -59,6 +61,7 @@ class Game
                 char below = (row < MapHeight - 1) ? raw[row + 1][column] : '.';
 
                 TileIndex[] tiles;
+                bool obstacle = false;
                 if (c == '.')
                 {
                     tiles = MakeTileSpan(new TileIndex(0, 0));
@@ -80,12 +83,15 @@ class Game
                     else if (left == '.') tiles = MakeTileSpan(new TileIndex(0, 2), new TileIndex(0, 1), 3);
                     else if (right == '.') tiles = MakeTileSpan(new TileIndex(5, 2), new TileIndex(0, 1), 3);
                     else tiles = MakeTileSpan(new TileIndex(2, 0));
+
+                    obstacle = true;
                 }
                 else
                 {
                     tiles = MakeTileSpan(new TileIndex(4, 0), new TileIndex(1, 0), 12);
                 }
                 Walls[column, row] = Choose(random, tiles);
+                Obstacles[column, row] = obstacle;
 
                 Vector2 here = new Vector2(column, row) * WallTiles.DestinationSize;
 
