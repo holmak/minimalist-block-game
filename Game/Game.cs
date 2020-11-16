@@ -271,8 +271,8 @@ class Game
 class Creature
 {
     public static readonly float MaxVelocity = 280;
-    public static readonly float MaxAcceleration = MaxVelocity * 10;
-    public static readonly float Deceleration = MaxVelocity * 15;
+    public static readonly float MaxAcceleration = MaxVelocity * 5;
+    public static readonly float Deceleration = MaxVelocity * 6;
 
     public Vector2 Position;
     public Vector2 Velocity;
