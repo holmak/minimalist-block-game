@@ -2,23 +2,29 @@
 using System.Linq;
 using System.Collections.Generic;
 
+static class Assets
+{
+    // Constants:
+    public static readonly int AnimationPeriod = 15;
+    public static readonly Color WinningTextColor = Color.Black;
+    public static readonly Color LosingTextColor = new Color(255, 0, 0);
+    public static Vector2 CellSize;
+
+    // Assets loaded from files:
+    public static readonly int TileAssetScale = 4;
+    public static TileTexture WallTiles;
+    public static TileTexture PropTiles;
+    public static TileTexture UITiles;
+    public static TileTexture FontTiles;
+}
+
 class Game
 {
     public static readonly string Title = "Minimalist RPG Demo";
     public static readonly Vector2 Resolution = new Vector2(1280, 768);
-    public static readonly int AssetScale = 4;
 
     public static readonly bool Debug = true;
     public static readonly bool DebugCollision = false;
-
-    static readonly int AnimationPeriod = 15;
-    static readonly Color WinningTextColor = Color.Black;
-    static readonly Color LosingTextColor = new Color(255, 0, 0);
-
-    TileTexture WallTiles = new TileTexture("wall_tiles.png", 16, AssetScale);
-    TileTexture PropTiles = new TileTexture("prop_tiles.png", 16, AssetScale);
-    TileTexture UITiles = new TileTexture("ui_tiles.png", 16, AssetScale);
-    TileTexture FontTiles = new TileTexture("font_tiles.png", 8, AssetScale);
 
     int AnimationTimer = 0;
     int MapWidth, MapHeight;
@@ -39,6 +45,12 @@ class Game
         {
             Engine.SetWindowDisplay(1);
         }
+
+        Assets.WallTiles = new TileTexture("wall_tiles.png", 16, Assets.TileAssetScale);
+        Assets.PropTiles = new TileTexture("prop_tiles.png", 16, Assets.TileAssetScale);
+        Assets.UITiles = new TileTexture("ui_tiles.png", 16, Assets.TileAssetScale);
+        Assets.FontTiles = new TileTexture("font_tiles.png", 8, Assets.TileAssetScale);
+        Assets.CellSize = Assets.WallTiles.DestinationSize;
 
         LoadMap();
     }
@@ -102,7 +114,7 @@ class Game
                 }
                 Walls[column, row] = Choose(random, tiles);
 
-                Vector2 here = new Vector2(column, row) * WallTiles.DestinationSize;
+                Vector2 here = new Vector2(column, row) * Assets.CellSize;
 
                 // Creatures always stand on floor tiles.
                 if (c == '@')
@@ -243,9 +255,9 @@ class Game
 
         AnimationTimer += 1;
         bool advanceFrame = false;
-        if (AnimationTimer >= AnimationPeriod)
+        if (AnimationTimer >= Assets.AnimationPeriod)
         {
-            AnimationTimer -= AnimationPeriod;
+            AnimationTimer -= Assets.AnimationPeriod;
             advanceFrame = true;
         }
 
@@ -332,11 +344,11 @@ class Game
             {
                 // These bounds describe the "solid" part of the entity; it is independent of position.
                 Bounds2 creatureShape = new Bounds2(
-                    new Vector2(1 / 8f, 6 / 8f) * WallTiles.DestinationSize,
-                    new Vector2(6 / 8f, 2 / 8f) * WallTiles.DestinationSize);
+                    new Vector2(1 / 8f, 6 / 8f) * Assets.CellSize,
+                    new Vector2(6 / 8f, 2 / 8f) * Assets.CellSize);
 
                 Vector2 motion = creature.Velocity * Engine.TimeDelta;
-                TileIndex nearest = GetCellAt(creature.Position, WallTiles);
+                TileIndex nearest = GetCellAt(creature.Position, Assets.WallTiles);
 
                 // Find everything that could be collided with:
                 List<Bounds2> obstacles = new List<Bounds2>();
@@ -347,8 +359,8 @@ class Game
                         if (Obstacles[column, row])
                         {
                             Bounds2 obstacleBounds = new Bounds2(
-                                new Vector2(column, row) * WallTiles.DestinationSize,
-                                WallTiles.DestinationSize);
+                                new Vector2(column, row) * Assets.CellSize,
+                                Assets.CellSize);
 
                             // The effective bounds are the sum of the obstacle's and the mover's bounds:
                             Vector2 min = obstacleBounds.Min - creatureShape.Max;
@@ -448,10 +460,10 @@ class Game
             Vector2 margin = new Vector2(300, 250);
             Origin.X = Clamp(Origin.X,
                 -Player.Position.X + margin.X,
-                -(Player.Position.X + PropTiles.DestinationSize.X) + Resolution.X - margin.X);
+                -(Player.Position.X + Assets.PropTiles.DestinationSize.X) + Resolution.X - margin.X);
             Origin.Y = Clamp(Origin.Y,
                 -Player.Position.Y + margin.Y,
-                -(Player.Position.Y + PropTiles.DestinationSize.Y) + Resolution.Y - margin.Y);
+                -(Player.Position.Y + Assets.PropTiles.DestinationSize.Y) + Resolution.Y - margin.Y);
         }
 
         // Draw the static part of the map:
@@ -459,14 +471,14 @@ class Game
         {
             for (int column = 0; column < MapWidth; column++)
             {
-                TileEngine.DrawTile(WallTiles, Walls[column, row], Origin + new Vector2(column, row) * WallTiles.DestinationSize);
+                TileEngine.DrawTile(Assets.WallTiles, Walls[column, row], Origin + new Vector2(column, row) * Assets.CellSize);
             }
         }
 
         // Draw back-to-front:
         foreach (Creature creature in Creatures.OrderBy(x => x.IsFlat ? 0 : 1).ThenBy(x => x.Position.Y))
         {
-            TileEngine.DrawTile(PropTiles, creature.Appearance[creature.Frame], Origin + creature.Position);
+            TileEngine.DrawTile(Assets.PropTiles, creature.Appearance[creature.Frame], Origin + creature.Position);
 
             if (advanceFrame)
             {
@@ -480,16 +492,16 @@ class Game
             string speech = Conversation[ConversationPage];
             int width = 16;
             int height = 3;
-            Vector2 pos = new TileIndex((20 - width) / 2, 12 - height) * WallTiles.DestinationSize;
+            Vector2 pos = new TileIndex((20 - width) / 2, 12 - height) * Assets.CellSize;
             DrawBorder(pos, width, height);
-            pos += 0.5f * WallTiles.DestinationSize;
-            TileEngine.DrawTileString(FontTiles, speech, pos);
+            pos += 0.5f * Assets.CellSize;
+            TileEngine.DrawTileString(Assets.FontTiles, speech, pos);
         }
         else if (availableConversation.Length > 0)
         {
             string text = "\x18 Converse";
-            Vector2 pos = new Vector2((20 - (text.Length + 1) / 2) / 2, 11) * WallTiles.DestinationSize;
-            TileEngine.DrawTileString(FontTiles, text, pos);
+            Vector2 pos = new Vector2((20 - (text.Length + 1) / 2) / 2, 11) * Assets.CellSize;
+            TileEngine.DrawTileString(Assets.FontTiles, text, pos);
         }
 
         if (State == GameState.Losing)
@@ -500,9 +512,9 @@ class Game
 
             string text = "You died";
             float textAlpha = Clamp((EndGameFrame - 8) / 5f, 0, 1);
-            Color textColor = LosingTextColor.WithAlpha(textAlpha);
-            Vector2 pos = new Vector2((20 - (text.Length + 1) / 2) / 2, 5) * WallTiles.DestinationSize;
-            TileEngine.DrawTileString(FontTiles, text, pos, color: textColor);
+            Color textColor = Assets.LosingTextColor.WithAlpha(textAlpha);
+            Vector2 pos = new Vector2((20 - (text.Length + 1) / 2) / 2, 5) * Assets.CellSize;
+            TileEngine.DrawTileString(Assets.FontTiles, text, pos, color: textColor);
         }
         else if (State == GameState.Winning)
         {
@@ -512,17 +524,17 @@ class Game
 
             string text = "You escaped!";
             float textAlpha = Clamp((EndGameFrame - 8) / 5f, 0, 1);
-            Color textColor = WinningTextColor.WithAlpha(textAlpha);
-            Vector2 pos = new Vector2((20 - (text.Length + 1) / 2) / 2, 5) * WallTiles.DestinationSize;
-            TileEngine.DrawTileString(FontTiles, text, pos, color: textColor);
+            Color textColor = Assets.WinningTextColor.WithAlpha(textAlpha);
+            Vector2 pos = new Vector2((20 - (text.Length + 1) / 2) / 2, 5) * Assets.CellSize;
+            TileEngine.DrawTileString(Assets.FontTiles, text, pos, color: textColor);
         }
 
         if (EndGameFrame > 20)
         {
             string text = "\x1A New game";
-            Vector2 pos = new Vector2((20 - (text.Length + 1) / 2) / 2, 11) * WallTiles.DestinationSize;
-            Color color = (State == GameState.Winning) ? WinningTextColor : LosingTextColor;
-            TileEngine.DrawTileString(FontTiles, text, pos, color: color);
+            Vector2 pos = new Vector2((20 - (text.Length + 1) / 2) / 2, 11) * Assets.CellSize;
+            Color color = (State == GameState.Winning) ? Assets.WinningTextColor : Assets.LosingTextColor;
+            TileEngine.DrawTileString(Assets.FontTiles, text, pos, color: color);
         }
 
         // Draw debug information:
@@ -560,7 +572,7 @@ class Game
                 else column = 1;
 
                 TileIndex tile = borderTiles + new TileIndex(column, row);
-                TileEngine.DrawTile(UITiles, tile, position + new Vector2(i, j) * WallTiles.DestinationSize);
+                TileEngine.DrawTile(Assets.UITiles, tile, position + new Vector2(i, j) * Assets.CellSize);
             }
         }
     }
