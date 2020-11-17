@@ -366,7 +366,7 @@ class Level
                     availableConversers.Add(creature);
                 }
 
-                if (creature.CanKill && State == GameState.Playing && distance < 64)
+                if (creature.CanKill && State == GameState.Playing && distance < 48)
                 {
                     State = GameState.Losing;
                     Engine.StopMusic(2.0f);
