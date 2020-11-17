@@ -79,6 +79,7 @@ class Level
     List<Creature> Conversers = new List<Creature>();
     int ConversationPage = 0;
     bool InConversation => Conversers.Count > 0 && ConversationPage < Conversers[0].Conversation.Length;
+    bool ShowMoveTip = true;
 
     public Level()
     {
@@ -363,6 +364,11 @@ class Level
         if (Engine.GetKeyHeld(Key.S)) input.Y += 1;
         Player.Movement = input;
 
+        if (input.Length() != 0)
+        {
+            ShowMoveTip = false;
+        }
+
         //==========================================================================================
         // AI:
         //==========================================================================================
@@ -571,6 +577,12 @@ class Level
         else if (availableConversers.Count > 0)
         {
             string text = "\x18 Converse";
+            Vector2 pos = new Vector2((20 - (text.Length + 1) / 2) / 2, 11) * Assets.CellSize;
+            TileEngine.DrawTileString(Assets.FontTiles, text, pos);
+        }
+        else if (ShowMoveTip)
+        {
+            string text = "\x1C \x1D \x1E \x1F Move";
             Vector2 pos = new Vector2((20 - (text.Length + 1) / 2) / 2, 11) * Assets.CellSize;
             TileEngine.DrawTileString(Assets.FontTiles, text, pos);
         }
