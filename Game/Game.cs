@@ -193,6 +193,21 @@ class Level
                         FollowDistanceMax = 300,
                     });
                 }
+                else if (c == 'F')
+                {
+                    // Flaming skull:
+                    Creatures.Add(new Creature
+                    {
+                        Speed = 210,
+                        Position = here,
+                        Appearance = MakeTileSpan(new TileIndex(0, 7), new TileIndex(1, 0), 4),
+                        Facing = TextureMirror.Horizontal,
+                        CanKill = true,
+                        Thought = Thought.Follow,
+                        FollowDistanceMin = 0,
+                        FollowDistanceMax = 260,
+                    });
+                }
                 else if (c == 'L')
                 {
                     // Ladder:
@@ -259,6 +274,34 @@ class Level
                         Position = here,
                         Appearance = MakeTileSpan(new TileIndex(7, 2)),
                         IsFlat = true,
+                    });
+                }
+                else if (c == 'T')
+                {
+                    // Treasure:
+                    Creatures.Add(new Creature
+                    {
+                        Position = here,
+                        Appearance = MakeTileSpan(new TileIndex(4, 3)),
+                    });
+                    obstacle = true;
+                }
+                else if (c == 'h')
+                {
+                    // Health potion:
+                    Creatures.Add(new Creature
+                    {
+                        Position = here,
+                        Appearance = MakeTileSpan(new TileIndex(9, 3)),
+                    });
+                }
+                else if (c == 'm')
+                {
+                    // Mana potion:
+                    Creatures.Add(new Creature
+                    {
+                        Position = here,
+                        Appearance = MakeTileSpan(new TileIndex(7, 3)),
                     });
                 }
                 else if (c == 'D')
@@ -725,6 +768,11 @@ class Level
         .................W--W.................
         .................W--W.................
         .................W--W.................
+        ...............WWW--WWW...............
+        ...............W-f-r--W...............
+        ...............WT-F--fW...............
+        ...............W-h-mT-W...............
+        ...............WWWWWWWW...............
         ......................................
         ......................................
         ";
