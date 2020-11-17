@@ -50,6 +50,7 @@ class Game
         // Create the player:
         Creatures.Add(new Creature
         {
+            Speed = 240,
             Appearance = MakeTileSpan(new TileIndex(0, 8), new TileIndex(1, 0), 4),
         });
 
@@ -129,6 +130,7 @@ class Game
                     // Skeleton:
                     Creatures.Add(new Creature
                     {
+                        Speed = 40,
                         Position = here,
                         Appearance = MakeTileSpan(new TileIndex(0, 5), new TileIndex(1, 0), 4),
                         CanKill = true,
@@ -285,6 +287,24 @@ class Game
         if (Engine.GetKeyHeld(Key.S)) input.Y += 1;
         Player.Movement = input;
 
+        // AI:
+        foreach (Creature creature in Creatures)
+        {
+            if (creature.CanKill)
+            {
+                Vector2 vectorToPlayer = Player.Position - creature.Position;
+                float distanceToPlayer = vectorToPlayer.Length();
+                if (distanceToPlayer < 300)
+                {
+                    creature.Movement = vectorToPlayer.Normalized();
+                }
+                else
+                {
+                    creature.Movement = Vector2.Zero;
+                }
+            }
+        }
+
         // Apply input and physics:
         foreach (Creature creature in Creatures)
         {
@@ -294,9 +314,9 @@ class Game
                 creature.Velocity = Vector2.Zero;
             }
 
-            creature.Velocity += creature.Movement * Creature.MaxAcceleration * Engine.TimeDelta;
-            creature.Velocity.X = Clamp(creature.Velocity.X, -Creature.MaxVelocity, Creature.MaxVelocity);
-            creature.Velocity.Y = Clamp(creature.Velocity.Y, -Creature.MaxVelocity, Creature.MaxVelocity);
+            creature.Velocity += creature.Movement * creature.MaxAcceleration * Engine.TimeDelta;
+            creature.Velocity.X = Clamp(creature.Velocity.X, -creature.Speed, creature.Speed);
+            creature.Velocity.Y = Clamp(creature.Velocity.Y, -creature.Speed, creature.Speed);
 
             // Update position and collide:
             {
@@ -401,14 +421,14 @@ class Game
             if (creature.Movement.X == 0)
             {
                 float speed = Math.Abs(creature.Velocity.X);
-                speed = Math.Max(0, speed - Creature.Deceleration);
+                speed = Math.Max(0, speed - creature.Deceleration);
                 creature.Velocity.X = Math.Sign(creature.Velocity.X) * speed;
             }
 
             if (creature.Movement.Y == 0)
             {
                 float speed = Math.Abs(creature.Velocity.Y);
-                speed = Math.Max(0, speed - Creature.Deceleration);
+                speed = Math.Max(0, speed - creature.Deceleration);
                 creature.Velocity.Y = Math.Sign(creature.Velocity.Y) * speed;
             }
         }
@@ -589,13 +609,12 @@ class Game
 
 class Creature
 {
-    public static readonly float MaxVelocity = 280;
-    public static readonly float MaxAcceleration = MaxVelocity * 5;
-    public static readonly float Deceleration = MaxVelocity * 6;
-
     public Vector2 Position;
     public Vector2 Velocity;
     public Vector2 Movement;
+    public float Speed = 0;
+    public float MaxAcceleration => Speed * 5;
+    public float Deceleration => Speed * 6;
     public TileIndex[] Appearance;
     public bool IsFlat = false;
     public int Frame = 0;
