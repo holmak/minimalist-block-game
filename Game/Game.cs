@@ -68,9 +68,9 @@ class Level
     Creature Player => Creatures[0];
     GameState State = GameState.Playing;
     int EndGameFrame = 0;
-    string[] Conversation = new string[0];
+    List<Creature> Conversers = new List<Creature>();
     int ConversationPage = 0;
-    bool InConversation => ConversationPage < Conversation.Length;
+    bool InConversation => Conversers.Count > 0 && ConversationPage < Conversers[0].Conversation.Length;
 
     public Level()
     {
@@ -143,6 +143,7 @@ class Level
                     // Priest NPC:
                     Creatures.Add(new Creature
                     {
+                        Speed = 200,
                         Position = here,
                         Appearance = MakeTileSpan(new TileIndex(0, 9), new TileIndex(1, 0), 4),
                         Facing = TextureMirror.Horizontal,
@@ -153,6 +154,9 @@ class Level
                             "Expedition Leader\n\n\"Now, quickly, the exit is\n just ahead.\"",
                             "Expedition Leader\n\n\"Go!\"",
                         },
+                        Thought = Thought.WaitToJoin,
+                        FollowDistanceMin = 80,
+                        FollowDistanceMax = float.MaxValue,
                     });
                 }
                 else if (c == 'S')
@@ -165,6 +169,9 @@ class Level
                         Appearance = MakeTileSpan(new TileIndex(0, 5), new TileIndex(1, 0), 4),
                         Facing = TextureMirror.Horizontal,
                         CanKill = true,
+                        Thought = Thought.Follow,
+                        FollowDistanceMin = 0,
+                        FollowDistanceMax = 300,
                     });
                 }
                 else if (c == 'L')
@@ -280,7 +287,7 @@ class Level
             advanceFrame = true;
         }
 
-        string[] availableConversation = new string[0];
+        List<Creature> availableConversers = new List<Creature>();
         foreach (Creature creature in Creatures)
         {
             if (creature != Player)
@@ -289,7 +296,7 @@ class Level
 
                 if (creature.Conversation.Length > 0 && distance < 96)
                 {
-                    availableConversation = creature.Conversation;
+                    availableConversers.Add(creature);
                 }
 
                 if (creature.CanKill && State == GameState.Playing && distance < 64)
@@ -304,16 +311,16 @@ class Level
             }
         }
 
-        if (availableConversation.Length == 0)
-        {
-            // Cancel the conversation:
-            Conversation = availableConversation;
-        }
-        else if (!InConversation && Engine.GetKeyDown(Key.J))
+        Conversers.RemoveAll(x => !availableConversers.Contains(x));
+
+        if (!InConversation && availableConversers.Count > 0 && Engine.GetKeyDown(Key.J))
         {
             // Begin a conversation:
-            Conversation = availableConversation;
+            Creature other = availableConversers[0];
+            Conversers.Add(other);
             ConversationPage = 0;
+
+            if (other.Thought == Thought.WaitToJoin) other.Thought = Thought.Follow;
         }
         else if (InConversation && Engine.GetKeyDown(Key.J))
         {
@@ -331,11 +338,11 @@ class Level
         // AI:
         foreach (Creature creature in Creatures)
         {
-            if (creature.CanKill)
+            if (creature.Thought == Thought.Follow)
             {
                 Vector2 vectorToPlayer = Player.Position - creature.Position;
                 float distanceToPlayer = vectorToPlayer.Length();
-                if (distanceToPlayer < 300)
+                if (distanceToPlayer > creature.FollowDistanceMin && distanceToPlayer < creature.FollowDistanceMax)
                 {
                     creature.Movement = vectorToPlayer.Normalized();
                 }
@@ -513,7 +520,7 @@ class Level
         // Draw UI:
         if (InConversation)
         {
-            string speech = Conversation[ConversationPage];
+            string speech = Conversers[0].Conversation[ConversationPage];
             int width = 16;
             int height = 3;
             Vector2 pos = new TileIndex((20 - width) / 2, 12 - height) * Assets.CellSize;
@@ -521,7 +528,7 @@ class Level
             pos += 0.5f * Assets.CellSize;
             TileEngine.DrawTileString(Assets.FontTiles, speech, pos);
         }
-        else if (availableConversation.Length > 0)
+        else if (availableConversers.Count > 0)
         {
             string text = "\x18 Converse";
             Vector2 pos = new Vector2((20 - (text.Length + 1) / 2) / 2, 11) * Assets.CellSize;
@@ -673,6 +680,16 @@ class Creature
     public string[] Conversation = new string[0];
     public bool CanWin = false;
     public bool CanKill = false;
+    public Thought Thought = Thought.None;
+    public float FollowDistanceMin = 0;
+    public float FollowDistanceMax = 0;
+}
+
+enum Thought
+{
+    None,
+    WaitToJoin,
+    Follow,
 }
 
 enum GameState
