@@ -84,14 +84,18 @@ class Level
     {
         Random random = new Random(100);
 
+        //==========================================================================================
         // Create the player:
+        //==========================================================================================
         Creatures.Add(new Creature
         {
             Speed = 240,
             Appearance = MakeTileSpan(new TileIndex(0, 8), new TileIndex(1, 0), 4),
         });
 
+        //==========================================================================================
         // Parse map data:
+        //==========================================================================================
         string[] raw = RawMapData.Split('\n').Select(x => x.Trim()).Where(x => x.Length > 0).ToArray();
         MapWidth = raw[0].Length;
         MapHeight = raw.Length;
@@ -101,6 +105,9 @@ class Level
         {
             for (int column = 0; column < MapWidth; column++)
             {
+                //==========================================================================================
+                // Choose tile variations for the static map terrain:
+                //==========================================================================================
                 char c = raw[row][column];
                 char left = (column > 0) ? raw[row][column - 1] : '.';
                 char right = (column < MapWidth - 1) ? raw[row][column + 1] : '.';
@@ -135,13 +142,16 @@ class Level
                 }
                 else
                 {
+                    // All other entities are implicitly on a floor tile.
                     tiles = MakeTileSpan(new TileIndex(4, 0), new TileIndex(1, 0), 12);
                 }
                 Walls[column, row] = Choose(random, tiles);
 
                 Vector2 here = new Vector2(column, row) * Assets.CellSize;
 
-                // Creatures always stand on floor tiles.
+                //==========================================================================================
+                // Spawn creatures and props:
+                //==========================================================================================
                 if (c == '@')
                 {
                     Player.Position = here;
@@ -297,6 +307,9 @@ class Level
             advanceFrame = true;
         }
 
+        //==========================================================================================
+        // Conversations:
+        //==========================================================================================
         List<Creature> availableConversers = new List<Creature>();
         foreach (Creature creature in Creatures)
         {
@@ -340,6 +353,9 @@ class Level
             ConversationPage += 1;
         }
 
+        //==========================================================================================
+        // Player input:
+        //==========================================================================================
         Vector2 input = Vector2.Zero;
         if (Engine.GetKeyHeld(Key.A)) input.X -= 1;
         if (Engine.GetKeyHeld(Key.D)) input.X += 1;
@@ -347,7 +363,9 @@ class Level
         if (Engine.GetKeyHeld(Key.S)) input.Y += 1;
         Player.Movement = input;
 
+        //==========================================================================================
         // AI:
+        //==========================================================================================
         foreach (Creature creature in Creatures)
         {
             if (creature.Thought == Thought.Follow)
@@ -365,7 +383,9 @@ class Level
             }
         }
 
-        // Apply input and physics:
+        //==========================================================================================
+        // Physics:
+        //==========================================================================================
         foreach (Creature creature in Creatures)
         {
             if (State != GameState.Playing)
@@ -497,7 +517,9 @@ class Level
             }
         }
 
+        //==========================================================================================
         // Scroll to keep the player onscreen:
+        //==========================================================================================
         {
             Vector2 margin = new Vector2(300, 250);
             Origin.X = Clamp(Origin.X,
@@ -508,7 +530,9 @@ class Level
                 -(Player.Position.Y + Assets.PropTiles.DestinationSize.Y) + Game.Resolution.Y - margin.Y);
         }
 
+        //==========================================================================================
         // Draw the static part of the map:
+        //==========================================================================================
         for (int row = 0; row < MapHeight; row++)
         {
             for (int column = 0; column < MapWidth; column++)
@@ -517,7 +541,9 @@ class Level
             }
         }
 
+        //==========================================================================================
         // Draw creatures back-to-front:
+        //==========================================================================================
         foreach (Creature creature in Creatures.OrderBy(x => x.IsFlat ? 0 : 1).ThenBy(x => x.Position.Y))
         {
             TileEngine.DrawTile(Assets.PropTiles, creature.Appearance[creature.Frame], Origin + creature.Position,
@@ -529,7 +555,9 @@ class Level
             }
         }
 
+        //==========================================================================================
         // Draw UI:
+        //==========================================================================================
         if (InConversation)
         {
             string speech = Conversers[0].Conversation[ConversationPage];
@@ -547,6 +575,9 @@ class Level
             TileEngine.DrawTileString(Assets.FontTiles, text, pos);
         }
 
+        //==========================================================================================
+        // End of game cinematics:
+        //==========================================================================================
         if (State == GameState.Losing)
         {
             if (advanceFrame)
@@ -593,7 +624,9 @@ class Level
             }
         }
 
-        // Draw debug information:
+        //==========================================================================================
+        // Debug information:
+        //==========================================================================================
         if (Game.Debug)
         {
             foreach (Action action in diagnostics)
