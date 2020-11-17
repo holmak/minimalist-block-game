@@ -26,18 +26,7 @@ class Game
     public static readonly bool Debug = true;
     public static readonly bool DebugCollision = false;
 
-    int AnimationTimer = 0;
-    int MapWidth, MapHeight;
-    TileIndex[,] Walls;
-    bool[,] Obstacles;
-    Vector2 Origin = Vector2.Zero;
-    List<Creature> Creatures = new List<Creature>();
-    Creature Player => Creatures[0];
-    GameState State = GameState.Playing;
-    int EndGameFrame = 0;
-    string[] Conversation = new string[0];
-    int ConversationPage = 0;
-    bool InConversation => ConversationPage < Conversation.Length;
+    Level CurrentLevel;
 
     public Game()
     {
@@ -52,10 +41,38 @@ class Game
         Assets.FontTiles = new TileTexture("font_tiles.png", 8, Assets.TileAssetScale);
         Assets.CellSize = Assets.WallTiles.DestinationSize;
 
-        LoadMap();
+        CurrentLevel = new Level();
     }
 
-    void LoadMap()
+    public void Update()
+    {
+        CurrentLevel.Update();
+
+        if (CurrentLevel.Restart)
+        {
+            CurrentLevel = new Level();
+        }
+    }
+}
+
+class Level
+{
+    public bool Restart = false;
+
+    int AnimationTimer = 0;
+    int MapWidth, MapHeight;
+    TileIndex[,] Walls;
+    bool[,] Obstacles;
+    Vector2 Origin = Vector2.Zero;
+    List<Creature> Creatures = new List<Creature>();
+    Creature Player => Creatures[0];
+    GameState State = GameState.Playing;
+    int EndGameFrame = 0;
+    string[] Conversation = new string[0];
+    int ConversationPage = 0;
+    bool InConversation => ConversationPage < Conversation.Length;
+
+    public Level()
     {
         Random random = new Random(100);
 
@@ -368,7 +385,7 @@ class Game
                             Bounds2 totalBounds = new Bounds2(min, max - min);
                             obstacles.Add(totalBounds);
 
-                            if (DebugCollision && creature == Player)
+                            if (Game.DebugCollision && creature == Player)
                             {
                                 diagnostics.Add(() => Engine.DrawRectEmpty(obstacleBounds.Translated(Origin), Color.Green));
                             }
@@ -430,7 +447,7 @@ class Game
                 }
                 creature.Position.Y = newPosition.Y;
 
-                if (DebugCollision && creature == Player)
+                if (Game.DebugCollision && creature == Player)
                 {
                     diagnostics.Add(() =>
                     {
@@ -460,10 +477,10 @@ class Game
             Vector2 margin = new Vector2(300, 250);
             Origin.X = Clamp(Origin.X,
                 -Player.Position.X + margin.X,
-                -(Player.Position.X + Assets.PropTiles.DestinationSize.X) + Resolution.X - margin.X);
+                -(Player.Position.X + Assets.PropTiles.DestinationSize.X) + Game.Resolution.X - margin.X);
             Origin.Y = Clamp(Origin.Y,
                 -Player.Position.Y + margin.Y,
-                -(Player.Position.Y + Assets.PropTiles.DestinationSize.Y) + Resolution.Y - margin.Y);
+                -(Player.Position.Y + Assets.PropTiles.DestinationSize.Y) + Game.Resolution.Y - margin.Y);
         }
 
         // Draw the static part of the map:
@@ -508,7 +525,7 @@ class Game
         {
             if (advanceFrame) EndGameFrame += 1;
             Color background = Color.Black.WithAlpha(EndGameFrame / 5f);
-            Engine.DrawRectSolid(new Bounds2(Vector2.Zero, Resolution), background);
+            Engine.DrawRectSolid(new Bounds2(Vector2.Zero, Game.Resolution), background);
 
             string text = "You died";
             float textAlpha = Clamp((EndGameFrame - 8) / 5f, 0, 1);
@@ -520,7 +537,7 @@ class Game
         {
             if (advanceFrame) EndGameFrame += 1;
             Color background = Color.White.WithAlpha(EndGameFrame / 5f);
-            Engine.DrawRectSolid(new Bounds2(Vector2.Zero, Resolution), background);
+            Engine.DrawRectSolid(new Bounds2(Vector2.Zero, Game.Resolution), background);
 
             string text = "You escaped!";
             float textAlpha = Clamp((EndGameFrame - 8) / 5f, 0, 1);
@@ -535,10 +552,15 @@ class Game
             Vector2 pos = new Vector2((20 - (text.Length + 1) / 2) / 2, 11) * Assets.CellSize;
             Color color = (State == GameState.Winning) ? Assets.WinningTextColor : Assets.LosingTextColor;
             TileEngine.DrawTileString(Assets.FontTiles, text, pos, color: color);
+
+            if (Engine.GetKeyDown(Key.N))
+            {
+                Restart = true;
+            }
         }
 
         // Draw debug information:
-        if (Debug)
+        if (Game.Debug)
         {
             foreach (Action action in diagnostics)
             {
