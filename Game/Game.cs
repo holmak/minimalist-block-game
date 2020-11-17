@@ -12,6 +12,8 @@ class Game
     public static readonly bool DebugCollision = false;
 
     static readonly int AnimationPeriod = 15;
+    static readonly Color WinningTextColor = Color.Black;
+    static readonly Color LosingTextColor = new Color(255, 0, 0);
 
     TileTexture WallTiles = new TileTexture("wall_tiles.png", 16, AssetScale);
     TileTexture PropTiles = new TileTexture("prop_tiles.png", 16, AssetScale);
@@ -25,6 +27,8 @@ class Game
     Vector2 Origin = Vector2.Zero;
     List<Creature> Creatures = new List<Creature>();
     Creature Player => Creatures[0];
+    GameState State = GameState.Playing;
+    int EndGameFrame = 0;
     string[] Conversation = new string[0];
     int ConversationPage = 0;
     bool InConversation => ConversationPage < Conversation.Length;
@@ -127,6 +131,7 @@ class Game
                     {
                         Position = here,
                         Appearance = MakeTileSpan(new TileIndex(0, 5), new TileIndex(1, 0), 4),
+                        CanKill = true,
                     });
                 }
                 else if (c == 'L')
@@ -157,6 +162,7 @@ class Game
                     {
                         Position = here,
                         Appearance = MakeTileSpan(new TileIndex(0, 0)),
+                        CanWin = true,
                     });
                     obstacle = true;
                 }
@@ -167,6 +173,7 @@ class Game
                     {
                         Position = here,
                         Appearance = MakeTileSpan(new TileIndex(1, 0)),
+                        CanWin = true,
                     });
                     obstacle = true;
                 }
@@ -196,9 +203,24 @@ class Game
         string[] availableConversation = new string[0];
         foreach (Creature creature in Creatures)
         {
-            if (creature != Player && (creature.Position - Player.Position).Length() < 96 && creature.Conversation.Length > 0)
+            if (creature != Player)
             {
-                availableConversation = creature.Conversation;
+                float distance = (creature.Position - Player.Position).Length();
+
+                if (creature.Conversation.Length > 0 && distance < 96)
+                {
+                    availableConversation = creature.Conversation;
+                }
+
+                if (creature.CanKill && State == GameState.Playing && distance < 64)
+                {
+                    State = GameState.Losing;
+                }
+
+                if (creature.CanWin && State == GameState.Playing && distance < 48)
+                {
+                    State = GameState.Winning;
+                }
             }
         }
 
@@ -229,6 +251,12 @@ class Game
         // Apply input and physics:
         foreach (Creature creature in Creatures)
         {
+            if (State != GameState.Playing)
+            {
+                creature.Movement = Vector2.Zero;
+                creature.Velocity = Vector2.Zero;
+            }
+
             creature.Velocity += creature.Movement * Creature.MaxAcceleration * Engine.TimeDelta;
             creature.Velocity.X = Clamp(creature.Velocity.X, -Creature.MaxVelocity, Creature.MaxVelocity);
             creature.Velocity.Y = Clamp(creature.Velocity.Y, -Creature.MaxVelocity, Creature.MaxVelocity);
@@ -397,6 +425,39 @@ class Game
             TileEngine.DrawTileString(FontTiles, text, pos);
         }
 
+        if (State == GameState.Losing)
+        {
+            if (advanceFrame) EndGameFrame += 1;
+            Color background = Color.Black.WithAlpha(EndGameFrame / 5f);
+            Engine.DrawRectSolid(new Bounds2(Vector2.Zero, Resolution), background);
+
+            string text = "You died";
+            float textAlpha = Clamp((EndGameFrame - 8) / 5f, 0, 1);
+            Color textColor = LosingTextColor.WithAlpha(textAlpha);
+            Vector2 pos = new Vector2((20 - (text.Length + 1) / 2) / 2, 5) * WallTiles.DestinationSize;
+            TileEngine.DrawTileString(FontTiles, text, pos, color: textColor);
+        }
+        else if (State == GameState.Winning)
+        {
+            if (advanceFrame) EndGameFrame += 1;
+            Color background = Color.White.WithAlpha(EndGameFrame / 5f);
+            Engine.DrawRectSolid(new Bounds2(Vector2.Zero, Resolution), background);
+
+            string text = "You escaped!";
+            float textAlpha = Clamp((EndGameFrame - 8) / 5f, 0, 1);
+            Color textColor = WinningTextColor.WithAlpha(textAlpha);
+            Vector2 pos = new Vector2((20 - (text.Length + 1) / 2) / 2, 5) * WallTiles.DestinationSize;
+            TileEngine.DrawTileString(FontTiles, text, pos, color: textColor);
+        }
+
+        if (EndGameFrame > 20)
+        {
+            string text = "\x1A New game";
+            Vector2 pos = new Vector2((20 - (text.Length + 1) / 2) / 2, 11) * WallTiles.DestinationSize;
+            Color color = (State == GameState.Winning) ? WinningTextColor : LosingTextColor;
+            TileEngine.DrawTileString(FontTiles, text, pos, color: color);
+        }
+
         // Draw debug information:
         if (Debug)
         {
@@ -495,4 +556,13 @@ class Creature
     public bool IsFlat = false;
     public int Frame = 0;
     public string[] Conversation = new string[0];
+    public bool CanWin = false;
+    public bool CanKill = false;
+}
+
+enum GameState
+{
+    Playing,
+    Winning,
+    Losing,
 }

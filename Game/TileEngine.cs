@@ -4,17 +4,18 @@ using System.Linq;
 
 static class TileEngine
 {
-    public static void DrawTile(TileTexture tiles, TileIndex index, Vector2 position)
+    public static void DrawTile(TileTexture tiles, TileIndex index, Vector2 position, Color? color = null)
     {
         Engine.DrawTexture(
             tiles.Texture,
             position: position,
+            color: color,
             scaleMode: TextureScaleMode.Nearest,
             source: new Bounds2(index * tiles.SourceSize, tiles.SourceSize),
             size: tiles.DestinationSize);
     }
 
-    public static void DrawTileString(TileTexture tileFont, string text, Vector2 position)
+    public static void DrawTileString(TileTexture tileFont, string text, Vector2 position, Color? color = null)
     {
         float step = tileFont.DestinationSize.X;
         float left = position.X;
@@ -27,7 +28,7 @@ static class TileEngine
             }
             else
             {
-                DrawTile(tileFont, new TileIndex(c % 16, c / 16), position);
+                DrawTile(tileFont, new TileIndex(c % 16, c / 16), position, color);
                 position.X += step;
             }
         }
