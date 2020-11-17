@@ -9,6 +9,7 @@ static class Assets
     public static readonly Color WinningTextColor = Color.Black;
     public static readonly Color LosingTextColor = new Color(255, 0, 0);
     public static Vector2 CellSize;
+    public static readonly int EndMusicFrame = 18;
 
     // Assets loaded from files:
     public static readonly int TileAssetScale = 4;
@@ -16,6 +17,9 @@ static class Assets
     public static TileTexture PropTiles;
     public static TileTexture UITiles;
     public static TileTexture FontTiles;
+    public static Music LevelMusic;
+    public static Music WinningMusic;
+    public static Music LosingMusic;
 }
 
 class Game
@@ -40,6 +44,10 @@ class Game
         Assets.UITiles = new TileTexture("ui_tiles.png", 16, Assets.TileAssetScale);
         Assets.FontTiles = new TileTexture("font_tiles.png", 8, Assets.TileAssetScale);
         Assets.CellSize = Assets.WallTiles.DestinationSize;
+
+        Assets.LevelMusic = Engine.LoadMusic("game-mini-boss.ogg");
+        Assets.WinningMusic = Engine.LoadMusic("game-over-climax.ogg");
+        Assets.LosingMusic = Engine.LoadMusic("game-over-start.ogg");
 
         CurrentLevel = new Level();
     }
@@ -268,6 +276,8 @@ class Level
                 Obstacles[column, row] = obstacle;
             }
         }
+
+        Engine.PlayMusic(Assets.LevelMusic, looping: true);
     }
 
     static T Choose<T>(Random random, IList<T> list)
@@ -302,11 +312,13 @@ class Level
                 if (creature.CanKill && State == GameState.Playing && distance < 64)
                 {
                     State = GameState.Losing;
+                    Engine.StopMusic(2.0f);
                 }
 
                 if (creature.CanWin && State == GameState.Playing && distance < 48)
                 {
                     State = GameState.Winning;
+                    Engine.StopMusic(2.0f);
                 }
             }
         }
@@ -537,7 +549,11 @@ class Level
 
         if (State == GameState.Losing)
         {
-            if (advanceFrame) EndGameFrame += 1;
+            if (advanceFrame)
+            {
+                EndGameFrame += 1;
+                if (EndGameFrame == Assets.EndMusicFrame) Engine.PlayMusic(Assets.LosingMusic, fadeTime: 6.0f);
+            }
             Color background = Color.Black.WithAlpha(EndGameFrame / 5f);
             Engine.DrawRectSolid(new Bounds2(Vector2.Zero, Game.Resolution), background);
 
@@ -549,7 +565,11 @@ class Level
         }
         else if (State == GameState.Winning)
         {
-            if (advanceFrame) EndGameFrame += 1;
+            if (advanceFrame)
+            {
+                EndGameFrame += 1;
+                if (EndGameFrame == Assets.EndMusicFrame) Engine.PlayMusic(Assets.WinningMusic, fadeTime: 6.0f);
+            }
             Color background = Color.White.WithAlpha(EndGameFrame / 5f);
             Engine.DrawRectSolid(new Bounds2(Vector2.Zero, Game.Resolution), background);
 
