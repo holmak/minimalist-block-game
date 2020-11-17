@@ -25,6 +25,9 @@ class Game
     Vector2 Origin = Vector2.Zero;
     List<Creature> Creatures = new List<Creature>();
     Creature Player => Creatures[0];
+    string[] Conversation = new string[0];
+    int ConversationPage = 0;
+    bool InConversation => ConversationPage < Conversation.Length;
 
     public Game()
     {
@@ -108,7 +111,14 @@ class Game
                     Creatures.Add(new Creature
                     {
                         Position = here,
-                        Appearance = MakeTileSpan(new TileIndex(0, 9), new TileIndex(1, 0), 4)
+                        Appearance = MakeTileSpan(new TileIndex(0, 9), new TileIndex(1, 0), 4),
+                        Conversation = new[]
+                        {
+                            "Expedition Leader\n\n\"Phew!\"",
+                            "Expedition Leader\n\n\"We nearly didn't make it\n out of that level!\"",
+                            "Expedition Leader\n\n\"Now, quickly, the exit is\n just ahead.\"",
+                            "Expedition Leader\n\n\"Go!\"",
+                        },
                     });
                 }
                 else if (c == 'B')
@@ -117,7 +127,7 @@ class Game
                     Creatures.Add(new Creature
                     {
                         Position = here,
-                        Appearance = MakeTileSpan(new TileIndex(0, 5), new TileIndex(1, 0), 4)
+                        Appearance = MakeTileSpan(new TileIndex(0, 5), new TileIndex(1, 0), 4),
                     });
                 }
                 else if (c == 'L')
@@ -158,6 +168,32 @@ class Game
         {
             AnimationTimer -= AnimationPeriod;
             advanceFrame = true;
+        }
+
+        string[] availableConversation = new string[0];
+        foreach (Creature creature in Creatures)
+        {
+            if (creature != Player && (creature.Position - Player.Position).Length() < 96 && creature.Conversation.Length > 0)
+            {
+                availableConversation = creature.Conversation;
+            }
+        }
+
+        if (availableConversation.Length == 0)
+        {
+            // Cancel the conversation:
+            Conversation = availableConversation;
+        }
+        else if (!InConversation && Engine.GetKeyDown(Key.J))
+        {
+            // Begin a conversation:
+            Conversation = availableConversation;
+            ConversationPage = 0;
+        }
+        else if (InConversation && Engine.GetKeyDown(Key.J))
+        {
+            // Continue a conversation:
+            ConversationPage += 1;
         }
 
         Vector2 input = Vector2.Zero;
@@ -320,6 +356,24 @@ class Game
             }
         }
 
+        // Draw UI:
+        if (InConversation)
+        {
+            string speech = Conversation[ConversationPage];
+            int width = 16;
+            int height = 3;
+            Vector2 pos = new TileIndex((20 - width) / 2, 12 - height) * WallTiles.DestinationSize;
+            DrawBorder(pos, width, height);
+            pos += 0.5f * WallTiles.DestinationSize;
+            TileEngine.DrawTileString(FontTiles, speech, pos);
+        }
+        else if (availableConversation.Length > 0)
+        {
+            string text = "\x18 Converse";
+            Vector2 pos = new Vector2((20 - (text.Length + 1) / 2) / 2, 11) * WallTiles.DestinationSize;
+            TileEngine.DrawTileString(FontTiles, text, pos);
+        }
+
         // Draw debug information:
         if (Debug)
         {
@@ -335,6 +389,29 @@ class Game
         return new TileIndex(
             (int)Math.Floor(point.X / tiles.DestinationSize.X),
             (int)Math.Floor(point.Y / tiles.DestinationSize.Y));
+    }
+
+    void DrawBorder(Vector2 position, int width, int height)
+    {
+        TileIndex borderTiles = new TileIndex(0, 1);
+        for (int j = 0; j < height; j++)
+        {
+            int row;
+            if (j == 0) row = 0;
+            else if (j == height - 1) row = 2;
+            else row = 1;
+
+            for (int i = 0; i < width; i++)
+            {
+                int column;
+                if (i == 0) column = 0;
+                else if (i == width - 1) column = 2;
+                else column = 1;
+
+                TileIndex tile = borderTiles + new TileIndex(column, row);
+                TileEngine.DrawTile(UITiles, tile, position + new Vector2(i, j) * WallTiles.DestinationSize);
+            }
+        }
     }
 
     static TileIndex[] MakeTileSpan(TileIndex first, TileIndex step, int count)
@@ -395,4 +472,5 @@ class Creature
     public TileIndex[] Appearance;
     public bool IsFlat = false;
     public int Frame = 0;
+    public string[] Conversation = new string[0];
 }

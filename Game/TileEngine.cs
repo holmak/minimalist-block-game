@@ -16,13 +16,20 @@ static class TileEngine
 
     public static void DrawTileString(TileTexture tileFont, string text, Vector2 position)
     {
+        float step = tileFont.DestinationSize.X;
+        float left = position.X;
         foreach (char c in text)
         {
-            if (c > ' ' && c <= 127)
+            if (c == '\n')
+            {
+                position.X = left;
+                position.Y += step;
+            }
+            else
             {
                 DrawTile(tileFont, new TileIndex(c % 16, c / 16), position);
+                position.X += step;
             }
-            position.X += tileFont.DestinationSize.X;
         }
     }
 }
