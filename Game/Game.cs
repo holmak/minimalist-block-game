@@ -96,7 +96,6 @@ class Game
                     tiles = MakeTileSpan(new TileIndex(4, 0), new TileIndex(1, 0), 12);
                 }
                 Walls[column, row] = Choose(random, tiles);
-                Obstacles[column, row] = obstacle;
 
                 Vector2 here = new Vector2(column, row) * WallTiles.DestinationSize;
 
@@ -139,6 +138,7 @@ class Game
                         Appearance = MakeTileSpan(new TileIndex(3, 0)),
                         IsFlat = true,
                     });
+                    obstacle = true;
                 }
                 else if (c == 'T')
                 {
@@ -148,7 +148,30 @@ class Game
                         Position = here,
                         Appearance = MakeTileSpan(new TileIndex(4, 3)),
                     });
+                    obstacle = true;
                 }
+                else if (c == 'D')
+                {
+                    // Door (left):
+                    Creatures.Add(new Creature
+                    {
+                        Position = here,
+                        Appearance = MakeTileSpan(new TileIndex(0, 0)),
+                    });
+                    obstacle = true;
+                }
+                else if (c == 'O')
+                {
+                    // Door (right):
+                    Creatures.Add(new Creature
+                    {
+                        Position = here,
+                        Appearance = MakeTileSpan(new TileIndex(1, 0)),
+                    });
+                    obstacle = true;
+                }
+
+                Obstacles[column, row] = obstacle;
             }
         }
     }
@@ -446,13 +469,12 @@ class Game
         ....W--------WWWWW---W................
         ....WL@---P--------T-W................
         ....W--------WWWWW---W................
-        ....WWWWWWWWWW...WW-WW................
-        ..................W-W..WWWWWWWW.......
-        ..................W-WWWW------WWWW....
-        ..................W---B----------D....
-        ..................WWWWWW----B----D....
-        .......................W------WWWW....
-        .......................WWWWWWWW.......
+        ....WWWWWWWWWW...WW-WW.WWWDOWWWW......
+        ..................W-W..W-------W......
+        ..................W-WWWW----B--W......
+        ..................W------------W......
+        ..................WWWWWW-B-----W......
+        .......................WWWWWWWWW......
         ......................................
         ......................................
         ......................................
