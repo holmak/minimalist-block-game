@@ -4,7 +4,8 @@ using System.Linq;
 
 static class TileEngine
 {
-    public static void DrawTile(TileTexture tiles, TileIndex index, Vector2 position, Color? color = null)
+    public static void DrawTile(TileTexture tiles, TileIndex index, Vector2 position,
+        Color? color = null, TextureMirror mirror = TextureMirror.None)
     {
         Engine.DrawTexture(
             tiles.Texture,
@@ -12,7 +13,8 @@ static class TileEngine
             color: color,
             scaleMode: TextureScaleMode.Nearest,
             source: new Bounds2(index * tiles.SourceSize, tiles.SourceSize),
-            size: tiles.DestinationSize);
+            size: tiles.DestinationSize,
+            mirror: mirror);
     }
 
     public static void DrawTileString(TileTexture tileFont, string text, Vector2 position, Color? color = null)

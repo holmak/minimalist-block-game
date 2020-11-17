@@ -145,6 +145,7 @@ class Level
                     {
                         Position = here,
                         Appearance = MakeTileSpan(new TileIndex(0, 9), new TileIndex(1, 0), 4),
+                        Facing = TextureMirror.Horizontal,
                         Conversation = new[]
                         {
                             "Expedition Leader\n\n\"Phew!\"",
@@ -162,6 +163,7 @@ class Level
                         Speed = 40,
                         Position = here,
                         Appearance = MakeTileSpan(new TileIndex(0, 5), new TileIndex(1, 0), 4),
+                        Facing = TextureMirror.Horizontal,
                         CanKill = true,
                     });
                 }
@@ -357,6 +359,10 @@ class Level
             creature.Velocity.X = Clamp(creature.Velocity.X, -creature.Speed, creature.Speed);
             creature.Velocity.Y = Clamp(creature.Velocity.Y, -creature.Speed, creature.Speed);
 
+            // Update sprite facing:
+            if (creature.Movement.X < 0) creature.Facing = TextureMirror.Horizontal;
+            if (creature.Movement.X > 0) creature.Facing = TextureMirror.None;
+
             // Update position and collide:
             {
                 // These bounds describe the "solid" part of the entity; it is independent of position.
@@ -492,10 +498,11 @@ class Level
             }
         }
 
-        // Draw back-to-front:
+        // Draw creatures back-to-front:
         foreach (Creature creature in Creatures.OrderBy(x => x.IsFlat ? 0 : 1).ThenBy(x => x.Position.Y))
         {
-            TileEngine.DrawTile(Assets.PropTiles, creature.Appearance[creature.Frame], Origin + creature.Position);
+            TileEngine.DrawTile(Assets.PropTiles, creature.Appearance[creature.Frame], Origin + creature.Position,
+                mirror: creature.Facing);
 
             if (advanceFrame)
             {
@@ -662,6 +669,7 @@ class Creature
     public TileIndex[] Appearance;
     public bool IsFlat = false;
     public int Frame = 0;
+    public TextureMirror Facing;
     public string[] Conversation = new string[0];
     public bool CanWin = false;
     public bool CanKill = false;
