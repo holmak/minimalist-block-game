@@ -17,7 +17,7 @@ static class Assets
 
 class Game
 {
-    public static readonly string Title = "Minimalist RPG Demo";
+    public static readonly string Title = "Minimalist Block Game";
     public static readonly Vector2 Resolution = new Vector2(1280, 768);
 
     public static readonly bool Debug = true;
